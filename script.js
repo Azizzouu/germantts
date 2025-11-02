@@ -1,6 +1,19 @@
 (function(){
   'use strict';
 
+  // Import german-noun package (will be bundled by webpack)
+  let getGermanNoun;
+  try {
+    // Webpack will bundle this require statement
+    if (typeof require !== 'undefined') {
+      const germanNoun = require('german-noun');
+      getGermanNoun = germanNoun.default || germanNoun;
+    }
+  } catch (e) {
+    // Package not available
+    console.warn('german-noun package not available');
+  }
+
   // ==========================================
   // TTS SECTION
   // ==========================================
@@ -252,6 +265,99 @@
 
     // Initial UI state
     updateUI();
+  })();
+
+  // ==========================================
+  // ARTIKEL SECTION
+  // ==========================================
+  
+  (function initArtikel() {
+    // Use the german-noun package imported at module level
+
+    // DOM elements
+    const nounInput = document.getElementById('artikel-noun');
+    const resultEl = document.getElementById('artikel-result');
+
+    if (!nounInput || !resultEl) return; // Feature not present in DOM
+
+    // Function to determine article using german-noun package
+    function determineArticle(word) {
+      if (!word || word.trim().length === 0) {
+        return null;
+      }
+
+      const normalized = word.trim().toLowerCase();
+
+      // Try to use german-noun package if available
+      if (getGermanNoun) {
+        try {
+          // Common API patterns for german-noun package
+          // Try different possible method names
+          let article;
+          if (typeof getGermanNoun === 'function') {
+            article = getGermanNoun(normalized);
+          } else if (getGermanNoun.getArticle) {
+            article = getGermanNoun.getArticle(normalized);
+          } else if (getGermanNoun.determineArticle) {
+            article = getGermanNoun.determineArticle(normalized);
+          } else if (getGermanNoun.find) {
+            article = getGermanNoun.find(normalized);
+          }
+
+          // Normalize the result
+          if (article) {
+            article = article.toLowerCase();
+            if (article === 'm' || article === 'masculine') return 'der';
+            if (article === 'f' || article === 'feminine') return 'die';
+            if (article === 'n' || article === 'neuter') return 'das';
+            if (article === 'der' || article === 'die' || article === 'das') return article;
+          }
+        } catch (error) {
+          console.error('Error using german-noun package:', error);
+        }
+      }
+
+      // Fallback if package not available or word not found
+      return null;
+    }
+
+    // Display result
+    function displayResult(noun, article) {
+      if (!noun || noun.trim().length === 0) {
+        resultEl.textContent = '';
+        resultEl.style.color = '';
+        return;
+      }
+
+      if (article) {
+        const capitalized = noun.charAt(0).toUpperCase() + noun.slice(1);
+        resultEl.textContent = `${article} ${capitalized}`;
+        resultEl.style.color = 'var(--success)';
+        resultEl.style.fontSize = '16px';
+        resultEl.style.fontWeight = '600';
+      } else {
+        resultEl.textContent = `Unable to determine article for "${noun}".`;
+        resultEl.style.color = 'var(--muted)';
+        resultEl.style.fontSize = '14px';
+        resultEl.style.fontWeight = '400';
+      }
+    }
+
+    // Event listener for input
+    nounInput.addEventListener('input', (e) => {
+      const noun = e.target.value.trim();
+      const article = determineArticle(noun);
+      displayResult(noun, article);
+    });
+
+    // Also handle Enter key
+    nounInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const noun = e.target.value.trim();
+        const article = determineArticle(noun);
+        displayResult(noun, article);
+      }
+    });
   })();
 
 })();
