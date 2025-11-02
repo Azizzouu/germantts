@@ -255,3 +255,228 @@
   })();
 
 })();
+
+// ==========================================
+// ARTICLE LOOKUP SECTION
+// ==========================================
+
+(function initArticleLookup() {
+  const wordEl = document.getElementById('article-word');
+  const lookupBtn = document.getElementById('article-lookupBtn');
+  const statusEl = document.getElementById('article-status');
+  const resultPanel = document.getElementById('article-result');
+  const contentEl = document.getElementById('article-content');
+
+  if (!wordEl || !lookupBtn) return;
+
+  function setStatus(msg, good = true) {
+    if (statusEl) {
+      statusEl.textContent = msg || '';
+      statusEl.style.color = good ? 'var(--success)' : 'var(--error)';
+    }
+  }
+
+  function showResult(html) {
+    if (contentEl) contentEl.innerHTML = html;
+    if (resultPanel) resultPanel.style.display = 'block';
+  }
+
+  function hideResult() {
+    if (resultPanel) resultPanel.style.display = 'none';
+  }
+
+  async function lookupArticle() {
+    const word = (wordEl.value || '').trim();
+    if (!word) {
+      setStatus('Please enter a German word.', false);
+      hideResult();
+      return;
+    }
+
+    setStatus('Looking up…');
+    hideResult();
+    lookupBtn.disabled = true;
+
+    try {
+      // Wiktionary API endpoint for German
+      const url = `https://de.wiktionary.org/api/rest_v1/page/html/${encodeURIComponent(word)}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setStatus('Word not found in Wiktionary.', false);
+        } else {
+          setStatus('Error fetching data from Wiktionary.', false);
+        }
+        lookupBtn.disabled = false;
+        return;
+      }
+
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Extract article information
+      const article = extractArticle(doc, word);
+      
+      if (article) {
+        const resultHTML = formatResult(article);
+        showResult(resultHTML);
+        setStatus('Found!');
+      } else {
+        setStatus('Could not find article information.', false);
+        hideResult();
+      }
+
+    } catch (error) {
+      console.error('Lookup error:', error);
+      setStatus('Error: Could not connect to Wiktionary.', false);
+    } finally {
+      lookupBtn.disabled = false;
+    }
+  }
+
+  function extractArticle(doc, word) {
+    // Look for German section
+    let germanSection = null;
+    const headers = doc.querySelectorAll('h2, h3, h4');
+    
+    for (let header of headers) {
+      if (header.textContent.includes('Deutsch') || header.id === 'Deutsch') {
+        germanSection = header;
+        break;
+      }
+    }
+
+    if (!germanSection) return null;
+
+    // Find the article in nearby content
+    let current = germanSection.nextElementSibling;
+    let article = null;
+    let genus = null;
+    let plural = null;
+
+    while (current && !current.matches('h2')) {
+      const text = current.textContent;
+      
+      // Look for article patterns
+      if (text.includes('der ') || text.includes('die ') || text.includes('das ')) {
+        const match = text.match(/\b(der|die|das)\s+\w+/i);
+        if (match) {
+          article = match[1].toLowerCase();
+        }
+      }
+
+      // Look for genus in tables or declension sections
+      if (current.tagName === 'TABLE') {
+        const cells = current.querySelectorAll('td, th');
+        for (let cell of cells) {
+          const cellText = cell.textContent.toLowerCase();
+          if (cellText.includes('genus') || cellText.includes('geschlecht')) {
+            const genusCell = cell.nextElementSibling;
+            if (genusCell) {
+              const genusText = genusCell.textContent.toLowerCase();
+              if (genusText.includes('maskulin') || genusText.includes('männlich')) {
+                article = 'der';
+                genus = 'maskulinum';
+              } else if (genusText.includes('feminin') || genusText.includes('weiblich')) {
+                article = 'die';
+                genus = 'femininum';
+              } else if (genusText.includes('neutrum') || genusText.includes('sächlich')) {
+                article = 'das';
+                genus = 'neutrum';
+              }
+            }
+          }
+          if (cellText.includes('plural')) {
+            const pluralCell = cell.nextElementSibling;
+            if (pluralCell) plural = pluralCell.textContent.trim();
+          }
+        }
+      }
+
+      // Check strong/template elements for article indicators
+      const strong = current.querySelector('strong, b');
+      if (strong && strong.textContent.includes(word)) {
+        const parent = strong.parentElement;
+        if (parent) {
+          const fullText = parent.textContent;
+          const articleMatch = fullText.match(/\b(der|die|das)\s+/i);
+          if (articleMatch) {
+            article = articleMatch[1].toLowerCase();
+          }
+        }
+      }
+
+      if (article) break;
+      current = current.nextElementSibling;
+    }
+
+    if (article) {
+      return { word, article, genus, plural };
+    }
+
+    return null;
+  }
+
+  function formatResult(data) {
+    const articleColors = {
+      'der': '#7aa2ff',
+      'die': '#ff7aa2', 
+      'das': '#a2ff7a'
+    };
+
+    const color = articleColors[data.article] || 'var(--accent)';
+
+    let html = `
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 48px; font-weight: 700; color: ${color}; margin-bottom: 8px;">
+          ${data.article}
+        </div>
+        <div style="font-size: 32px; font-weight: 600; color: var(--text);">
+          ${data.word}
+        </div>
+      </div>
+    `;
+
+    if (data.genus) {
+      html += `
+        <div style="margin: 12px 0; padding: 12px; background: rgba(122, 162, 255, 0.1); border-radius: 8px;">
+          <strong style="color: var(--accent);">Genus:</strong> ${data.genus}
+        </div>
+      `;
+    }
+
+    if (data.plural) {
+      html += `
+        <div style="margin: 12px 0; padding: 12px; background: rgba(122, 162, 255, 0.1); border-radius: 8px;">
+          <strong style="color: var(--accent);">Plural:</strong> ${data.plural}
+        </div>
+      `;
+    }
+
+    html += `
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(122, 162, 255, 0.15); font-size: 12px; color: var(--muted); text-align: center;">
+        Data from <a href="https://de.wiktionary.org/wiki/${encodeURIComponent(data.word)}" target="_blank" style="color: var(--accent);">Wiktionary</a>
+      </div>
+    `;
+
+    return html;
+  }
+
+  // Event listeners
+  if (lookupBtn) {
+    lookupBtn.addEventListener('click', lookupArticle);
+  }
+
+  if (wordEl) {
+    wordEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        lookupArticle();
+      }
+    });
+  }
+})();
+
