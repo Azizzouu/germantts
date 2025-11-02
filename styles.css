@@ -265,3 +265,39 @@ footer {
   margin-top: 6px;
 }
 
+.feature-section {
+  margin-bottom: 24px;
+}
+
+.feature-section:last-child {
+  margin-bottom: 0;
+}
+
+.feature-header {
+  margin-bottom: 16px;
+}
+
+.feature-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: #0e1429;
+  color: var(--text);
+  border: 1px solid rgba(122, 162, 255, .25);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 16px;
+  outline: none;
+  font-family: inherit;
+}
+
+input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(122, 162, 255, .2);
+}
+

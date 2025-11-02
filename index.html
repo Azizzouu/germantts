@@ -7,63 +7,94 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app" role="application" aria-label="German Text to Speech app😊😊😊😊😊😊😊">
+  <div class="app" role="application" aria-label="German Text to Speech app">
     <header>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M4 10a8 8 0 1 0 16 0" stroke="currentColor" stroke-width="1.6"/>
         <path d="M12 2v8" stroke="currentColor" stroke-width="1.6"/>
         <rect x="9" y="18" width="6" height="2" rx="1" fill="currentColor"/>
       </svg>
-      <h1>German Text‑to‑Speech</h1>
+      <h1>German Text‑to‑Speech </h1>
       <span class="badge">Local Browser Voices</span>
     </header>
 
     <main>
-      <div class="row panel">
-        <label for="text">German text <span class="hint">— paste or type anything (umlauts/ß supported)</span></label>
-        <textarea id="text" placeholder="Gib hier deinen deutschen Text ein… Beispiel: ‚Hallo! Wie geht es dir heute?‘"></textarea>
-        <div class="voice-info">
-          <div class="hint">Characters: <span id="charCount" class="count">0</span></div>
-          <div class="status" id="status" aria-live="polite"></div>
+      <!-- TTS Feature Section -->
+      <section class="feature-section" data-feature="tts">
+        <div class="feature-header">
+          <h2>Text-to-Speech (TTS)</h2>
         </div>
-      </div>
+        
+        <div class="row panel">
+          <label for="tts-text">German text <span class="hint">— paste or type anything (umlauts/ß supported)</span></label>
+          <textarea id="tts-text" placeholder="Gib hier deinen deutschen Text ein… Beispiel: ‚Hallo! Wie geht es dir heute?‘"></textarea>
+          <div class="voice-info">
+            <div class="hint">Characters: <span id="tts-charCount" class="count">0</span></div>
+            <div class="status" id="tts-status" aria-live="polite"></div>
+          </div>
+        </div>
 
-      <div class="grid">
-        <div class="col-12 panel">
-          <div class="grid">
-            <div class="col-12 col-6">
-              <label for="voice">German voice</label>
-              <select id="voice" aria-label="Select German voice"></select>
-              <div class="hint" id="voiceHint">Loading voices…</div>
-            </div>
-            <div class="col-12 col-6">
-              <label>Settings</label>
-              <div class="slider">
-                <span class="hint" style="width:70px">Rate <span id="rateVal" class="count">1.0</span></span>
-                <input id="rate" type="range" min="0.5" max="2" step="0.1" value="1">
+        <div class="grid">
+          <div class="col-12 panel">
+            <div class="grid">
+              <div class="col-12 col-6">
+                <label for="tts-voice">German voice</label>
+                <select id="tts-voice" aria-label="Select German voice"></select>
+                <div class="hint" id="tts-voiceHint">Loading voices…</div>
               </div>
-              <div class="slider">
-                <span class="hint" style="width:70px">Pitch <span id="pitchVal" class="count">1.0</span></span>
-                <input id="pitch" type="range" min="0" max="2" step="0.1" value="1">
-              </div>
-              <div class="slider">
-                <span class="hint" style="width:70px">Volume <span id="volVal" class="count">1.0</span></span>
-                <input id="volume" type="range" min="0" max="1" step="0.1" value="1">
+              <div class="col-12 col-6">
+                <label>Settings</label>
+                <div class="slider">
+                  <span class="hint" style="width:70px">Rate <span id="tts-rateVal" class="count">1.0</span></span>
+                  <input id="tts-rate" type="range" min="0.5" max="2" step="0.1" value="1">
+                </div>
+                <div class="slider">
+                  <span class="hint" style="width:70px">Pitch <span id="tts-pitchVal" class="count">1.0</span></span>
+                  <input id="tts-pitch" type="range" min="0" max="2" step="0.1" value="1">
+                </div>
+                <div class="slider">
+                  <span class="hint" style="width:70px">Volume <span id="tts-volVal" class="count">1.0</span></span>
+                  <input id="tts-volume" type="range" min="0" max="1" step="0.1" value="1">
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="panel">
-        <div class="controls">
-          <button id="speakBtn">▶️ Speak</button>
-          <button id="pauseBtn" disabled>⏸️ Pause</button>
-          <button id="resumeBtn" disabled>🔁 Resume</button>
-          <button id="stopBtn" disabled>⏹️ Stop</button>
+        <div class="panel">
+          <div class="controls">
+            <button id="tts-speakBtn">▶️ Speak</button>
+            <button id="tts-pauseBtn" disabled>⏸️ Pause</button>
+            <button id="tts-resumeBtn" disabled>🔁 Resume</button>
+            <button id="tts-stopBtn" disabled>⏹️ Stop</button>
+          </div>
+          <div class="hint" style="margin-top:8px">Tip: Press <span class="pill">Ctrl/⌘ + Enter</span> to speak.</div>
         </div>
-        <div class="hint" style="margin-top:8px">Tip: Press <span class="pill">Ctrl/⌘ + Enter</span> to speak.</div>
-      </div>
+      </section>
+
+      <!-- Future features can be added here as new sections -->
+
+      <!-- Article Lookup Section -->
+      <section class="feature-section" data-feature="article">
+        <div class="feature-header">
+          <h2>Article Lookup (der/die/das)</h2>
+        </div>
+        
+        <div class="row panel">
+          <label for="article-word">German word <span class="hint">— enter a noun to find its article</span></label>
+          <input type="text" id="article-word" placeholder="z.B. Haus, Katze, Buch…">
+          <div class="voice-info">
+            <button id="article-lookupBtn" style="width: auto; padding: 10px 20px;">🔍 Lookup Article</button>
+            <div class="status" id="article-status" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="panel" id="article-result" style="display: none;">
+          <div id="article-content"></div>
+        </div>
+      </section>
+
+
     </main>
 
     <footer>
