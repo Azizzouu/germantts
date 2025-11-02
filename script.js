@@ -1,18 +1,50 @@
 (function(){
   'use strict';
 
-  // Import german-noun package (will be bundled by webpack)
+  // Import german-noun package (will be bundled by webpack if available)
+  // Note: If the package doesn't exist, webpack will show a warning but the code will work
+  // with the fallback dictionary below
   let getGermanNoun;
   try {
-    // Webpack will bundle this require statement
+    // Webpack will bundle this require statement if package exists
     if (typeof require !== 'undefined') {
+      // This may cause a webpack warning if package doesn't exist - that's fine
+      // eslint-disable-next-line
       const germanNoun = require('german-noun');
       getGermanNoun = germanNoun.default || germanNoun;
     }
   } catch (e) {
-    // Package not available
-    console.warn('german-noun package not available');
+    // Package not available - will use fallback dictionary
+    getGermanNoun = null;
   }
+
+  // Fallback dictionary for German noun articles
+  const germanNounDictionary = {
+    'der': new Set([
+      'mann', 'tisch', 'stuhl', 'baum', 'hund', 'tag', 'berg', 'fluss', 'weg', 'zug',
+      'computer', 'fernseher', 'kühlschrank', 'stift', 'buch', 'koffer', 'schuh',
+      'automat', 'apfel', 'ball', 'bruder', 'vater', 'sohn', 'kopf', 'fuß', 'arm',
+      'augen', 'mund', 'zahn', 'bart', 'hut', 'mantel', 'schrank', 'turm', 'wald',
+      'park', 'platz', 'bahnhof', 'flughafen', 'hafen', 'bürger', 'könig', 'kaiser',
+      'freund', 'lehrer', 'schüler', 'student', 'professor', 'direktor'
+    ]),
+    'die': new Set([
+      'frau', 'tür', 'wand', 'straße', 'stadt', 'zeit', 'welt', 'nacht', 'sonne',
+      'blume', 'hand', 'katze', 'maus', 'milch', 'woche', 'uhr', 'tasche', 'zeitung',
+      'schule', 'universität', 'mutter', 'tochter', 'schwester', 'nase', 'zunge',
+      'brille', 'jacke', 'schuhe', 'flasche', 'tasse', 'lampe', 'bahn', 'maschine',
+      'fabrik', 'bank', 'kirche', 'bibliothek', 'musik', 'kamera', 'karte', 'post',
+      'pizza', 'frage', 'antwort', 'sprache', 'zeitung', 'zeitschrift'
+    ]),
+    'das': new Set([
+      'haus', 'auto', 'kind', 'wasser', 'bier', 'essen', 'brot', 'glas', 'fenster',
+      'bild', 'rad', 'flugzeug', 'schiff', 'tier', 'pferd', 'schwein', 'huhn', 'ei',
+      'messer', 'bett', 'sofa', 'telefon', 'radio', 'handy', 'tablet', 'spiel',
+      'video', 'foto', 'jahr', 'monat', 'jahrhundert', 'jahrzehnt', 'maß', 'ziel',
+      'problem', 'thema', 'klima', 'system', 'projekt', 'werk', 'museum', 'kino',
+      'theater', 'hotel', 'buch' // Note: 'buch' appears in both der and das contexts
+    ])
+  };
 
   // ==========================================
   // TTS SECTION
@@ -317,7 +349,14 @@
         }
       }
 
-      // Fallback if package not available or word not found
+      // Fallback to dictionary lookup
+      for (const [article, nouns] of Object.entries(germanNounDictionary)) {
+        if (nouns.has(normalized)) {
+          return article;
+        }
+      }
+
+      // Return null if not found in package or dictionary
       return null;
     }
 

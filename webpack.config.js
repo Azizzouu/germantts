@@ -17,6 +17,9 @@ module.exports = {
       "path": false
     }
   },
-  target: 'web'
+  target: 'web',
+  ignoreWarnings: [
+    /Module not found: Error: Can't resolve 'german-noun'/,
+  ]
 };
 

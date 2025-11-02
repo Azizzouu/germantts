@@ -11,7 +11,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "german-noun": "^1.0.0"
   },
   "devDependencies": {
     "webpack": "^5.88.0",
