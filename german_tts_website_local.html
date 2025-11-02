@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>German Text‑to‑Speech (Local)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141a32;
+      --accent: #7aa2ff;
+      --muted: #9aa3b2;
+      --text: #e8ecf8;
+      --success: #a0ffbf;
+      --error: #ffb3c1;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1020, #0a0d18 40%, #0b1020);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    
+    .app {
+      width: min(980px, 100%);
+      background: rgba(20, 26, 50, .75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(122, 162, 255, .15);
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+      overflow: hidden;
+    }
+    
+    header {
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(122, 162, 255, .15);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    
+    header .badge {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    main {
+      padding: 18px 24px 24px;
+      display: grid;
+      gap: 16px;
+    }
+    
+    .row {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+    
+    .col-12 {
+      grid-column: span 12;
+    }
+    
+    .col-6 {
+      grid-column: span 6;
+    }
+    
+    @media (max-width: 768px) {
+      .col-6 {
+        grid-column: span 12;
+      }
+    }
+    
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(122, 162, 255, .15);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin: 0 0 8px 2px;
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      background: #0e1429;
+      color: var(--text);
+      border: 1px solid rgba(122, 162, 255, .25);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.5;
+      outline: none;
+      font-family: inherit;
+    }
+    
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(122, 162, 255, .2);
+    }
+    
+    select, input[type="range"], button {
+      width: 100%;
+      font-family: inherit;
+    }
+    
+    select {
+      background: #0e1429;
+      color: var(--text);
+      border: 1px solid rgba(122, 162, 255, .25);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(122, 162, 255, .2);
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .controls button {
+      flex: 1 1 160px;
+      appearance: none;
+      border: 1px solid rgba(122, 162, 255, .3);
+      background: linear-gradient(180deg, #1b2347, #151c39);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .04s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    
+    .controls button:hover {
+      border-color: var(--accent);
+      box-shadow: 0 6px 20px rgba(122, 162, 255, .15);
+    }
+    
+    .controls button:active {
+      transform: translateY(1px);
+    }
+    
+    .controls button[disabled] {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+    
+    .slider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .slider input {
+      accent-color: var(--accent);
+      flex: 1;
+    }
+    
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    .status {
+      font-size: 13px;
+      color: var(--success);
+    }
+    
+    footer {
+      padding: 10px 16px 18px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+    
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border: 1px solid rgba(122, 162, 255, .25);
+      border-radius: 999px;
+    }
+    
+    .count {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-content {
+      background: var(--panel);
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid rgba(122, 162, 255, .15);
+    }
+    
+    .modal h3 {
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+    
+    .modal p {
+      margin-bottom: 12px;
+    }
+    
+    .modal button {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: var(--bg);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .voice-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="German Text to Speech app">
+    <header>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M4 10a8 8 0 1 0 16 0" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M12 2v8" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="9" y="18" width="6" height="2" rx="1" fill="currentColor"/>
+      </svg>
+      <h1>German Text‑to‑Speech</h1>
+      <span class="badge">Local Browser Voices</span>
+    </header>
+
+    <main>
+      <div class="row panel">
+        <label for="text">German text <span class="hint">— paste or type anything (umlauts/ß supported)</span></label>
+        <textarea id="text" placeholder="Gib hier deinen deutschen Text ein… Beispiel: ‚Hallo! Wie geht es dir heute?‘"></textarea>
+        <div class="voice-info">
+          <div class="hint">Characters: <span id="charCount" class="count">0</span></div>
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col-12 panel">
+          <div class="grid">
+            <div class="col-12 col-6">
+              <label for="voice">German voice</label>
+              <select id="voice" aria-label="Select German voice"></select>
+              <div class="hint" id="voiceHint">Loading voices…</div>
+            </div>
+            <div class="col-12 col-6">
+              <label>Settings</label>
+              <div class="slider">
+                <span class="hint" style="width:70px">Rate <span id="rateVal" class="count">1.0</span></span>
+                <input id="rate" type="range" min="0.5" max="2" step="0.1" value="1">
+              </div>
+              <div class="slider">
+                <span class="hint" style="width:70px">Pitch <span id="pitchVal" class="count">1.0</span></span>
+                <input id="pitch" type="range" min="0" max="2" step="0.1" value="1">
+              </div>
+              <div class="slider">
+                <span class="hint" style="width:70px">Volume <span id="volVal" class="count">1.0</span></span>
+                <input id="volume" type="range" min="0" max="1" step="0.1" value="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="controls">
+          <button id="speakBtn">▶️ Speak</button>
+          <button id="pauseBtn" disabled>⏸️ Pause</button>
+          <button id="resumeBtn" disabled>🔁 Resume</button>
+          <button id="stopBtn" disabled>⏹️ Stop</button>
+        </div>
+        <div class="hint" style="margin-top:8px">Tip: Press <span class="pill">Ctrl/⌘ + Enter</span> to speak.</div>
+      </div>
+    </main>
+
+    <footer>
+      Works fully offline once your browser has German voices installed. Best in Chrome, Edge, or Safari.
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      // Check browser support
+      const supports = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+      
+      // DOM elements
+      const textEl = document.getElementById('text');
+      const voiceSel = document.getElementById('voice');
+      const voiceHint = document.getElementById('voiceHint');
+      const speakBtn = document.getElementById('speakBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resumeBtn = document.getElementById('resumeBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const rate = document.getElementById('rate');
+      const pitch = document.getElementById('pitch');
+      const volume = document.getElementById('volume');
+      const rateVal = document.getElementById('rateVal');
+      const pitchVal = document.getElementById('pitchVal');
+      const volVal = document.getElementById('volVal');
+      const statusEl = document.getElementById('status');
+      const countEl = document.getElementById('charCount');
+
+      // Load saved preferences
+      if (localStorage.getItem('tts_text')) {
+        textEl.value = localStorage.getItem('tts_text');
+      }
+      
+      let selectedVoiceURI = null;
+      ['rate', 'pitch', 'volume', 'voiceURI'].forEach(k => {
+        const v = localStorage.getItem('tts_' + k);
+        if (k === 'voiceURI' && v) selectedVoiceURI = v;
+        if (v && k !== 'voiceURI') document.getElementById(k).value = v;
+      });
+
+      // Character count and text saving
+      function updateCounts() { 
+        countEl.textContent = textEl.value.length.toString(); 
+        localStorage.setItem('tts_text', textEl.value); 
+      }
+      textEl.addEventListener('input', updateCounts); 
+      updateCounts();
+
+      // Status display
+      function setStatus(msg, good = true) { 
+        statusEl.textContent = msg || ''; 
+        statusEl.style.color = good ? 'var(--success)' : 'var(--error)'; 
+      }
+
+      // Check browser support
+      if (!supports) {
+        setStatus('Your browser does not support Speech Synthesis. Try Chrome, Edge, or Safari.', false);
+        document.querySelectorAll('button').forEach(b => b.disabled = true);
+        voiceSel.disabled = true;
+        rate.disabled = true;
+        pitch.disabled = true;
+        volume.disabled = true;
+        return;
+      }
+
+      // Voice management
+      let voices = [];
+
+      function populateVoices() {
+        voiceSel.innerHTML = '';
+        voices = window.speechSynthesis.getVoices();
+        const german = voices.filter(v => /de(-|_|\b)/i.test(v.lang) || /German/i.test(v.name));
+        const list = german.length ? german : voices;
+        if (!german.length) {
+          voiceHint.textContent = 'No German voices detected.';
+          const btn = document.createElement('button');
+          btn.id = 'installHelp';
+          btn.textContent = 'How to install';
+          btn.style.marginLeft = '8px';
+          btn.style.padding = '4px 8px';
+          btn.style.background = 'var(--accent)';
+          btn.style.border = 'none';
+          btn.style.borderRadius = '6px';
+          btn.style.cursor = 'pointer';
+          btn.style.color = 'var(--bg)';
+          btn.style.fontWeight = '600';
+          btn.addEventListener('click', showInstallGuide);
+          voiceHint.appendChild(btn);
+        } else {
+          voiceHint.textContent = `Found ${german.length} German voice(s).`;
+        }
+        list.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voiceURI;
+          opt.textContent = `${v.name} — ${v.lang}${v.default ? ' (default)' : ''}`;
+          if (selectedVoiceURI && v.voiceURI === selectedVoiceURI) opt.selected = true;
+          voiceSel.appendChild(opt);
+        });
+        if (!selectedVoiceURI && list[0]) selectedVoiceURI = list[0].voiceURI;
+        checkGermanVoices();
+      }
+
+      function checkGermanVoices() {
+        const germanVoices = voices.filter(v => /de(-|_|\b)/i.test(v.lang));
+        if (germanVoices.length === 0) {
+          // Show a more prominent hint if no German voices are found
+          voiceHint.style.color = 'var(--error)';
+        }
+      }
+
+      function showInstallGuide() {
+        const guide = `
+          <div class="modal">
+            <div class="modal-content">
+              <h3>Install German Voices</h3>
+              <p><strong>Chrome/Edge:</strong> Settings → Advanced → Accessibility → Text-to-speech → Manage voices</p>
+              <p><strong>Windows:</strong> Settings → Time & Language → Speech → Manage voices</p>
+              <p><strong>macOS:</strong> System Preferences → Accessibility → Spoken Content → System Voice</p>
+              <p><strong>Android:</strong> Settings → Accessibility → Text-to-speech output</p>
+              <button onclick="this.closest('.modal').remove()">Close</button>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', guide);
+      }
+
+      // Initialize voices
+      populateVoices();
+      if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+        speechSynthesis.onvoiceschanged = () => { populateVoices(); };
+      }
+
+      // Get selected voice
+      function getSelectedVoice() {
+        const uri = voiceSel.value || selectedVoiceURI;
+        return voices.find(v => v.voiceURI === uri) || null;
+      }
+
+      // Get the best available German voice
+      function getBestGermanVoice() {
+        const germanVoices = voices.filter(v => /de(-|_|\b)/i.test(v.lang));
+        
+        // Prefer voices that are specifically German
+        const exactMatch = germanVoices.find(v => v.lang === 'de-DE' || v.lang === 'de-CH' || v.lang === 'de-AT');
+        
+        return exactMatch || germanVoices[0] || voices[0];
+      }
+
+      // UI state management
+      function updateUI() {
+        const speaking = speechSynthesis.speaking;
+        const paused = speechSynthesis.paused;
+        speakBtn.disabled = speaking;
+        pauseBtn.disabled = !speaking || paused;
+        resumeBtn.disabled = !speaking || !paused;
+        stopBtn.disabled = !speaking;
+      }
+
+      // Speech functions
+      function speak() {
+        const text = (textEl.value || '').trim();
+        if (!text) { 
+          setStatus('Please enter some German text first.', false); 
+          return; 
+        }
+        try {
+          if (window.speechSynthesis.getVoices().length === 0) {
+            setStatus('No local voices available.', false);
+            return;
+          }
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          const v = getSelectedVoice() || getBestGermanVoice();
+          if (v) { 
+            u.voice = v; 
+            u.lang = v.lang || 'de-DE'; 
+          } else { 
+            u.lang = 'de-DE'; 
+          }
+          u.rate = parseFloat(rate.value);
+          u.pitch = parseFloat(pitch.value);
+          u.volume = parseFloat(volume.value);
+          u.onstart = () => { setStatus('Speaking…'); updateUI(); };
+          u.onend = () => { setStatus('Done.'); updateUI(); };
+          u.onerror = (e) => { setStatus('Error: ' + (e.error || 'unknown'), false); updateUI(); };
+          u.onpause = () => { setStatus('Paused'); updateUI(); };
+          u.onresume = () => { setStatus('Speaking…'); updateUI(); };
+          speechSynthesis.speak(u);
+          updateUI();
+        } catch (error) {
+          setStatus(`Error: ${error.message}`, false);
+          console.error('TTS Error:', error);
+        }
+      }
+
+      // Event listeners
+      speakBtn.addEventListener('click', speak);
+      pauseBtn.addEventListener('click', () => { 
+        speechSynthesis.pause(); 
+        updateUI(); 
+      });
+      
+      resumeBtn.addEventListener('click', () => { 
+        speechSynthesis.resume(); 
+        updateUI(); 
+      });
+      
+      stopBtn.addEventListener('click', () => { 
+        speechSynthesis.cancel(); 
+        setStatus('Stopped.'); 
+        updateUI(); 
+      });
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { 
+          e.preventDefault(); 
+          speak(); 
+        }
+      });
+
+      // Voice selection
+      voiceSel.addEventListener('change', () => {
+        selectedVoiceURI = voiceSel.value; 
+        localStorage.setItem('tts_voiceURI', selectedVoiceURI);
+      });
+
+
+      // Settings sliders
+      [rate, pitch, volume].forEach(el => {
+        const map = {rate: rateVal, pitch: pitchVal, volume: volVal};
+        el.addEventListener('input', () => {
+          map[el.id].textContent = parseFloat(el.value).toFixed(1);
+          localStorage.setItem('tts_' + el.id, el.value);
+        });
+        map[el.id].textContent = parseFloat(el.value).toFixed(1);
+      });
+
+      // Initial UI state
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
