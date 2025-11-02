@@ -278,93 +278,269 @@
 
     if (!nounInput || !resultEl) return; // Feature not present in DOM
 
-    // Dictionary of common German nouns with their articles
-    const nounDictionary = {
-      // Masculine (der)
-      'der': new Set([
-        'mann', 'tisch', 'stuhl', 'baum', 'hund', 'tag', 'berg', 'fluss', 'weg', 'zug',
-        'computer', 'fernseher', 'kühlschrank', 'stift', 'buch', 'koffer', 'schuh',
-        'automat', 'apfel', 'ball', 'bruder', 'vater', 'sohn', 'kopf', 'fuß', 'arm',
-        'augen', 'mund', 'zahn', 'bart', 'hut', 'mantel', 'schrank', 'turm', 'wald',
-        'park', 'platz', 'bahnhof', 'flughafen', 'hafen', 'bürger', 'könig', 'kaiser'
-      ]),
-      // Feminine (die)
-      'die': new Set([
-        'frau', 'tür', 'wand', 'straße', 'stadt', 'zeit', 'welt', 'nacht', 'sonne',
-        'blume', 'hand', 'katze', 'maus', 'milch', 'woche', 'uhr', 'tasche', 'zeitung',
-        'schule', 'universität', 'mutter', 'tochter', 'schwester', 'nase', 'zunge',
-        'brille', 'jacke', 'schuhe', 'flasche', 'tasse', 'lampe', 'straße', 'bahn',
-        'maschine', 'fabrik', 'bank', 'kirche', 'schule', 'bibliothek', 'musik',
-        'kamera', 'karte', 'post', 'pizza', 'frage', 'antwort', 'sprache'
-      ]),
-      // Neuter (das)
-      'das': new Set([
-        'haus', 'auto', 'kind', 'buch', 'wasser', 'bier', 'essen', 'brot', 'glas',
-        'fenster', 'bild', 'rad', 'flugzeug', 'schiff', 'tier', 'pferd', 'schwein',
-        'huhn', 'ei', 'messer', 'bett', 'sofa', 'telefon', 'radio', 'telefon',
-        'computer', 'handy', 'tablet', 'spiel', 'video', 'foto', 'jahr', 'monat',
-        'jahrhundert', 'jahrzehnt', 'maß', 'ziel', 'problem', 'thema', 'klima',
-        'system', 'projekt', 'werk', 'museum', 'kino', 'theater', 'hotel'
-      ])
-    };
+    /**
+     * Comprehensive rule-based German noun gender determination
+     * Based on linguistic patterns and morphological rules for German nouns
+     */
+    
+    // Normalize word for pattern matching (lowercase, handle ß)
+    function normalizeForMatching(word) {
+      return word.trim().toLowerCase().replace(/ß/g, 'ss');
+    }
 
-    // Pattern-based rules for article determination
-    function determineArticleByPattern(word) {
-      const lower = word.toLowerCase();
+    // Extract base form from plural (common patterns)
+    function getBaseForm(word) {
+      const normalized = normalizeForMatching(word);
       
-      // Neuter (das) patterns
-      if (lower.endsWith('chen') || lower.endsWith('lein')) return 'das';
-      if (lower.endsWith('tum') || lower.endsWith('um')) return 'das';
-      if (lower.endsWith('ment')) return 'das';
+      // Plural patterns (return base singular form)
+      if (normalized.endsWith('innen')) return normalized.slice(0, -5) + 'in';
+      if (normalized.endsWith('en') && normalized.length > 3) {
+        // Could be plural, but be careful not to strip valid endings
+        if (normalized.endsWith('chen') || normalized.endsWith('lein')) return normalized;
+        if (normalized.endsWith('tion') || normalized.endsWith('sion')) return normalized;
+        // Try without 'en' but validate it's still a valid noun ending
+        const withoutEn = normalized.slice(0, -2);
+        if (withoutEn.length >= 2) return withoutEn;
+      }
+      if (normalized.endsWith('er') && normalized.length > 3 && !normalized.endsWith('ier')) {
+        // Could be plural of nouns ending in 'el', 'en', etc.
+        // But 'er' plural is less common, so be conservative
+      }
+      if (normalized.endsWith('e') && normalized.length > 2) {
+        const withoutE = normalized.slice(0, -1);
+        if (withoutE.length >= 2) return withoutE;
+      }
       
-      // Feminine (die) patterns
-      if (lower.endsWith('ung')) return 'die';
-      if (lower.endsWith('heit') || lower.endsWith('keit')) return 'die';
-      if (lower.endsWith('schaft')) return 'die';
-      if (lower.endsWith('ion')) return 'die';
-      if (lower.endsWith('tät')) return 'die';
-      if (lower.endsWith('ik')) return 'die';
-      if (lower.endsWith('ur')) return 'die';
+      return normalized;
+    }
+
+    /**
+     * Determine article based on comprehensive morphological rules
+     * Priority: Specific endings > Semantic patterns > Length-based rules
+     */
+    function determineArticleByRules(word) {
+      const normalized = normalizeForMatching(word);
+      const baseForm = getBaseForm(word);
       
-      // Masculine (der) patterns
-      if (lower.endsWith('er') && lower.length > 3 && !lower.endsWith('ier')) return 'der';
-      if (lower.endsWith('ling')) return 'der';
-      if (lower.endsWith('ismus')) return 'der';
-      if (lower.endsWith('or') && lower.length > 3) return 'der';
-      if (lower.endsWith('eur')) return 'der';
+      // ==========================================
+      // NEUTER (das) RULES - Check first (most specific)
+      // ==========================================
       
+      // Diminutive endings (100% reliable)
+      if (normalized.endsWith('chen') || normalized.endsWith('lein')) {
+        return 'das';
+      }
+      
+      // Nouns ending in -tum (nearly 100%)
+      if (normalized.endsWith('tum') && normalized.length > 3) {
+        return 'das';
+      }
+      
+      // Nouns ending in -um (foreign words, scientific terms)
+      if (normalized.endsWith('um') && normalized.length > 3 && !normalized.endsWith('tum')) {
+        return 'das';
+      }
+      
+      // Nouns ending in -ment (French/Latin loans)
+      if (normalized.endsWith('ment')) {
+        return 'das';
+      }
+      
+      // Nouns ending in -nis (usually neuter, but some exceptions exist)
+      if (normalized.endsWith('nis')) {
+        return 'das';
+      }
+      
+      // Nouns ending in -sal, -sel
+      if (normalized.endsWith('sal') || normalized.endsWith('sel')) {
+        return 'das';
+      }
+      
+      // Infinitives used as nouns (das Laufen, das Lesen)
+      // Note: This is context-dependent, but if word ends with -en and is capitalized, often das
+      if (normalized.endsWith('en') && normalized.length > 4 && 
+          !normalized.endsWith('chen') && !normalized.endsWith('tion')) {
+        // Could be infinitive, but check other patterns first
+      }
+      
+      // Ge- prefix + noun stem (often neuter)
+      if (normalized.startsWith('ge') && normalized.length > 4) {
+        return 'das';
+      }
+      
+      // Nouns from adjectives (das Gute, das Böse) - usually das + adjective
+      // Hard to detect without context
+      
+      // ==========================================
+      // FEMININE (die) RULES
+      // ==========================================
+      
+      // -ung ending (very reliable, ~99%)
+      if (normalized.endsWith('ung')) {
+        return 'die';
+      }
+      
+      // -heit, -keit endings (very reliable)
+      if (normalized.endsWith('heit') || normalized.endsWith('keit')) {
+        return 'die';
+      }
+      
+      // -schaft ending
+      if (normalized.endsWith('schaft')) {
+        return 'die';
+      }
+      
+      // -ion, -tion, -sion endings (French/Latin loans)
+      if (normalized.endsWith('ion') || normalized.endsWith('tion') || normalized.endsWith('sion')) {
+        return 'die';
+      }
+      
+      // -tät, -ität endings
+      if (normalized.endsWith('tät') || normalized.endsWith('ität')) {
+        return 'die';
+      }
+      
+      // -ik ending
+      if (normalized.endsWith('ik') && normalized.length > 3) {
+        return 'die';
+      }
+      
+      // -ur ending
+      if (normalized.endsWith('ur') && normalized.length > 3 && !normalized.endsWith('atur')) {
+        return 'die';
+      }
+      
+      // -ei ending
+      if (normalized.endsWith('ei') && normalized.length > 3 && !normalized.endsWith('erei')) {
+        return 'die';
+      }
+      
+      // -e ending (many feminine nouns, but many exceptions)
+      if (normalized.endsWith('e') && normalized.length > 2) {
+        // Exceptions: some masculine (der Name, der See) and neuter (das Auge, das Ende)
+        // But statistically, -e ending favors feminine
+        // Check for known exceptions first
+        const eExceptions = ['name', 'see', 'auge', 'ende', 'interesse', 'ergebnis'];
+        if (!eExceptions.includes(baseForm)) {
+          return 'die';
+        }
+      }
+      
+      // -in ending (female person/occupation)
+      if (normalized.endsWith('in') && normalized.length > 2 && !normalized.endsWith('chin')) {
+        return 'die';
+      }
+      
+      // -ade, -age, -anz, -enz endings
+      if (normalized.endsWith('ade') || normalized.endsWith('age') || 
+          normalized.endsWith('anz') || normalized.endsWith('enz')) {
+        return 'die';
+      }
+      
+      // ==========================================
+      // MASCULINE (der) RULES
+      // ==========================================
+      
+      // -er ending (agent nouns, many masculine)
+      if (normalized.endsWith('er') && normalized.length > 3) {
+        // Exceptions: -ier (often neuter in compounds), but standalone -er is often masculine
+        if (!normalized.endsWith('ier') && !normalized.endsWith('chen') && !normalized.endsWith('lein')) {
+          return 'der';
+        }
+      }
+      
+      // -ling ending (diminutive/masculine)
+      if (normalized.endsWith('ling')) {
+        return 'der';
+      }
+      
+      // -ismus ending (ideologies, movements)
+      if (normalized.endsWith('ismus')) {
+        return 'der';
+      }
+      
+      // -or ending (often masculine, especially occupations)
+      if (normalized.endsWith('or') && normalized.length > 3) {
+        return 'der';
+      }
+      
+      // -eur, -är endings (occupations, often masculine)
+      if (normalized.endsWith('eur') || normalized.endsWith('är')) {
+        return 'der';
+      }
+      
+      // -ig, -ich endings (often masculine)
+      if (normalized.endsWith('ig') || normalized.endsWith('ich')) {
+        return 'der';
+      }
+      
+      // -us ending (often masculine, Latin loans)
+      if (normalized.endsWith('us') && normalized.length > 3 && !normalized.endsWith('mus')) {
+        return 'der';
+      }
+      
+      // Days of week, months (masculine)
+      const daysMonths = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
+                         'januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 
+                         'september', 'oktober', 'november', 'dezember'];
+      if (daysMonths.includes(normalized)) {
+        return 'der';
+      }
+      
+      // Seasons (masculine)
+      if (['frühling', 'sommer', 'herbst', 'winter'].includes(normalized)) {
+        return 'der';
+      }
+      
+      // Compass directions (masculine)
+      if (['norden', 'süden', 'osten', 'westen'].includes(normalized)) {
+        return 'der';
+      }
+      
+      // ==========================================
+      // SEMANTIC PATTERNS (less reliable but useful)
+      // ==========================================
+      
+      // Body parts (mixed, but patterns exist)
+      // Many body parts are feminine, but many exceptions
+      
+      // Trees (usually masculine)
+      const trees = ['baum', 'birke', 'eiche', 'buche', 'fichte', 'tanne', 'linde', 'ahorn', 'ulme'];
+      if (trees.includes(baseForm)) {
+        return 'der';
+      }
+      
+      // Mountains, hills (usually masculine)
+      if (normalized.endsWith('berg') || normalized.includes('berg')) {
+        return 'der';
+      }
+      
+      // Rivers (usually masculine in Germany, but feminine in Austria/Switzerland)
+      // Default to masculine
+      if (normalized.endsWith('fluss') || normalized.includes('fluss')) {
+        return 'der';
+      }
+      
+      // Cars, vehicles (usually masculine or neuter)
+      // Brands often masculine (der BMW), generic terms often neuter (das Auto)
+      
+      // If no pattern matches, return null (unknown)
       return null;
     }
 
-    // Main function to determine article
+    /**
+     * Main function to determine article
+     * Uses rule-based approach with fallback handling
+     */
     function determineArticle(word) {
       if (!word || word.trim().length === 0) {
         return null;
       }
 
-      const normalized = word.trim().toLowerCase();
+      // Apply comprehensive rule-based determination
+      const article = determineArticleByRules(word);
       
-      // Remove common plural endings and capitalize first letter for dictionary lookup
-      let lookupWord = normalized;
-      if (lookupWord.endsWith('e') && lookupWord.length > 2) {
-        lookupWord = lookupWord.slice(0, -1);
-      }
-      
-      // Check dictionary first
-      for (const [article, nouns] of Object.entries(nounDictionary)) {
-        if (nouns.has(normalized) || nouns.has(lookupWord)) {
-          return article;
-        }
-      }
-      
-      // If not in dictionary, use pattern matching
-      const patternResult = determineArticleByPattern(normalized);
-      if (patternResult) {
-        return patternResult;
-      }
-      
-      // Default fallback (most common is 'der' but we'll say unknown)
-      return null;
+      return article;
     }
 
     // Display result
