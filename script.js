@@ -4,7 +4,9 @@
   // ==========================================
   // TTS SECTION
   // ==========================================
-  
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
   (function initTTS() {
     // Check browser support
     const supports = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
@@ -146,9 +148,26 @@
     // Get the best available German voice
     function getBestGermanVoice() {
       const germanVoices = voices.filter(v => /de(-|_|\b)/i.test(v.lang));
-      const exactMatch = germanVoices.find(v => v.lang === 'de-DE' || v.lang === 'de-CH' || v.lang === 'de-AT');
-      return exactMatch || germanVoices[0] || voices[0];
+    
+      if (!germanVoices.length) return voices[0] || null;
+    
+      // ✅ Desktop Chrome / Android Chrome
+      const googleVoice = germanVoices.find(v =>
+        v.name.toLowerCase().includes("google") ||
+        v.voiceURI.toLowerCase().includes("google")
+      );
+      if (!isIOS() && googleVoice) return googleVoice;
+    
+      // ✅ iOS (Safari/Chrome → same WebKit engine)
+      if (isIOS()) {
+        const markus = germanVoices.find(v =>
+          v.name.toLowerCase().includes("markus")
+        );
+        if (markus) return markus;
+      }
+      return germanVoices[0];
     }
+    
 
     // UI state management
     function updateUI() {
